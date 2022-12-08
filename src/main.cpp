@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <math.h>
+#include "camera.h"
 #include "display.h"
 #include "matrix4.h"
 #include "renderer.h"
@@ -30,6 +31,8 @@ int main(int argc, char* argv[]) {
     // Create new Renderer and pass our display
     Renderer renderer(display);
 
+    Camera camera;
+
     SDL_Event event;
     display.drawBackground();
     display.update();
@@ -37,18 +40,7 @@ int main(int argc, char* argv[]) {
     // Load mesh
     Mesh mesh(MESH_PATH);
 
-    float cam_tran_x = 0;
-    float cam_tran_y = 0;
-    float cam_tran_z = 0;
-    float cam_rot_x = 0;
-    float cam_rot_y = 0;
-    float cam_rot_z = 0;
-
     bool is_running = true;
-    float rot_x = 0.0f;
-    float rot_y = 0.0f;
-    float tran_x = 0.0f;
-    float tran_y = 0.0f;
     float zoom = 1.0f;
     int mouse_clicked = 0;
     bool animate = true;
@@ -85,12 +77,12 @@ int main(int argc, char* argv[]) {
             }
             if (event.type == SDL_MOUSEMOTION) {
                 if (mouse_clicked == 1) {
-                    rot_x -= event.motion.xrel * delta;
-                    rot_y -= event.motion.yrel * delta;
+                    mesh.rotation.x -= event.motion.xrel * delta;
+                    mesh.rotation.y -= event.motion.yrel * delta;
                 }
                 if (mouse_clicked == 2) {
-                    tran_x += ((float)(event.motion.xrel)) * (4.0/WIDTH);
-                    tran_y -= ((float)(event.motion.yrel)) * (4.0/HEIGHT);
+                    mesh.translation.x += ((float)(event.motion.xrel)) * (4.0 / WIDTH);
+                    mesh.translation.y -= ((float)(event.motion.yrel)) * (4.0 / HEIGHT);
                 }
 
             }
@@ -105,34 +97,34 @@ int main(int argc, char* argv[]) {
                         animate = !animate;
                         break;
                     case SDLK_w:
-                        cam_tran_z -= 0.1f;
+                        camera.translation.z -= 0.1f;
                         break;
                     case SDLK_s:
-                        cam_tran_z += 0.1f;
+                        camera.translation.z += 0.1f;
                         break;
                     case SDLK_a:
-                        cam_tran_x += 0.1f;
+                        camera.translation.x += 0.1f;
                         break;
                     case SDLK_d:
-                        cam_tran_x -= 0.1f;
+                        camera.translation.x -= 0.1f;
                         break;
                     case SDLK_SPACE:
-                        cam_tran_y -= 0.1f;
+                        camera.translation.y -= 0.1f;
                         break;
                     case SDLK_LCTRL:
-                        cam_tran_y += 0.1f;
+                        camera.translation.y += 0.1f;
                         break;
                     case SDLK_LEFT:
-                        cam_rot_y -= 0.1f;
+                        camera.rotation.y -= 0.1f;
                         break;
                     case SDLK_RIGHT:
-                        cam_rot_y += 0.1f;
+                        camera.rotation.y += 0.1f;
                         break;
                     case SDLK_UP:
-                        cam_rot_x += 0.1f;
+                        camera.rotation.x += 0.1f;
                         break;
                     case SDLK_DOWN:
-                        cam_rot_x -= 0.1f;
+                        camera.rotation.x -= 0.1f;
                 }
             }
         }
@@ -142,17 +134,17 @@ int main(int argc, char* argv[]) {
 
         // Update rotation amount for animation
         if (!mouse_clicked && animate) {
-            rot_x -= delta;
+            mesh.rotation.x -= delta;
         }
 
         // Create new transformation matrix
         Matrix4 transform =
-            Matrix4::initTranslation(tran_x, tran_y, 4 * zoom)
-                .mul(Matrix4::initRotation(rot_y, rot_x, 0)
+            Matrix4::initTranslation(mesh.translation.x, mesh.translation.y, 4 * zoom)
+                .mul(Matrix4::initRotation(mesh.rotation.y, mesh.rotation.x, 0)
                     .mul(Matrix4::initScale(1, 1, 1))
                 );
 
-        transform = Matrix4::initTranslation(cam_tran_x, cam_tran_y, cam_tran_z).mul(Matrix4::initRotation(cam_rot_x, cam_rot_y, cam_rot_z).mul(transform));
+        transform = Matrix4::initTranslation(camera.translation.x, camera.translation.y, camera.translation.z).mul(Matrix4::initRotation(camera.rotation.x, camera.rotation.y, camera.rotation.z).mul(transform));
 
         // Draw mesh
         renderer.drawMesh(mesh, transform, 0xFFFFFFFF, fill);
